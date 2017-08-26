@@ -22,14 +22,24 @@ $( document ).ready(() => {
     let html = _.reverse(paragraphs.map((p) => { return `<p>${p.join('')}</p>`; })).join('')
     $( '#content' ).html(html);
   };
-  let _add = (key) => paragraphs[0].push(key);
+  let _add = (key) => _.first(paragraphs).push(key);
   let _newLine = () => paragraphs.unshift([]);
+  let _reset = () => paragraphs = [[]];
   var dot = false;
   $( 'body' ).keydown((event) => {
     var key = event.originalEvent.key;
     let code = event.keyCode;
     log(`key down ${key} (${code})`);
     let allowed = [' ', ',', '.', ';', ':', '?', '!', '-'];
+    if (key === 'Escape') {
+      var text = $("#content").html();
+      var filename = _.last(paragraphs).map( (word) => { return word.replace(' ', '-').toLowerCase(); } ).join('');
+      if (filename !== null && filename !== 'undefined' && filename !== '') {
+        var blob = new Blob([text], {type: "text/plain;charset=utf-8"});
+        let ret = saveAs(blob, filename+".html");
+      }
+      _reset();
+    };
     if (key === '.') { log('dot'); dot = true; }
     console.log('d: ', dot);
     if (dot && (code >= 65 && code <= 90)) {
