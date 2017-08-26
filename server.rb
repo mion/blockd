@@ -9,6 +9,7 @@ post '/blocks' do
   puts payload["filename"]
   puts payload["paragraphs"]
   path = "/Users/gvieira/Documents/blockd"
+  payload["filename"] = "unnamed" if payload["filename"] == ''
   fname = payload["filename"].sub(" ", "-") + "-#{Time.now.to_i}"
   File.open(path + "/" + fname + ".txt", "w+") { |f| f.puts(payload["paragraphs"].join("\n")) }
 end
