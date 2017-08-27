@@ -33,7 +33,7 @@ $( document ).ready(() => {
     var key = event.originalEvent.key;
     let code = event.keyCode;
     log(`key down ${key} (${code})`);
-    let allowed = [' ', ',', '.', ';', ':', '?', '!', '-'];
+    let allowed = [ ' ', ',', '.', ';', ':', '?', '!', '-', ')', '(', '[', ']', '{', '}' ];
     if (key === 'Escape') {
       var text = $("#content").html();
       // var filename = _.last(paragraphs).map( (word) => { allowed.forEach((w) => { if (word != ' ') { word = word.replace(w, ''); } else { word = '-'; } }); return word.replace('_', '').toLowerCase(); } ).join('');
