@@ -2,17 +2,138 @@ function log(msg) {
   if (typeof msg === 'string') {
     console.log(`[*] ${msg}`);
   } else {
-    console.log(`[* object: ${msg}]`);
+    console.log(`[* object]`);
     console.log(msg);
   }
 }
 
-function ok(js) {
-  console.assert(eval(js), js)
+log('loading blockd.js...')
+
+function ok(msg) { log(msg) }
+function ko(msg) { console.error(msg) }
+
+
+let blockd = {
+    paragraphs: [[]],
+    currentParagraph: function () {
+        return _.last(this.paragraphs)
+    },
+    mode: {},
+    handled: [],
+    regexps: [],
+    regexpFuncs: [],
+    codes: [],
+    codeFuncs: [],
+    transform: function (regexpOrCode, func) {
+        if (typeof regexpOrCode === 'number') {
+            let code = regexpOrCode
+            this.codes.push(code)
+            this.codeFuncs.push(func)
+        } else if (typeof regexpOrCode === 'object') {
+            let regexp = regexpOrCode
+            this.regexps.push(regexp)
+            this.regexpFuncs.push(func)
+        } else {
+            ko('transform used incorrectly')
+        }
+        return null
+    },
+    handle: function (string, code) {
+        let identityTransformationFunc = (s, c, b) => { return s }
+        var transformationFunc = null
+        for(var i = 0; i < this.codes.length; i++) {
+            if (this.codes[i] === code) {
+                if (transformationFunc !== null) { ko('conflict'); break }
+                transformationFunc = this.codeFuncs[i]
+            }
+        }
+        for (var i = 0; i < this.regexps.length; i++) {
+            if (this.regexps[i].test(string)) {
+                if (transformationFunc !== null) { ko('conflict'); break }
+                transformationFunc = this.regexpFuncs[i]
+            }
+        }
+        if (transformationFunc === null) {
+            transformationFunc = identityTransformationFunc
+        }
+        let transformedString = transformationFunc(string, code, this)
+        if (_.isUndefined(transformedString) || _.isNull(transformedString)) {
+            ok(`blocked '${string}' (${code})`)
+            this.handled.push({blocked: true, raw: string, transformed: transformedString, code: code})
+        } else {
+            this.add(transformedString)
+            ok(`transformed '${string}' (${code}) -> '${transformedString}'`)
+            this.handled.push({blocked: false, raw: string, transformed: transformedString, code: code})
+        }
+        return null
+    },
+    removeLast: function () {
+        let removed = this.currentParagraph().pop()
+        return removed
+    },
+    getLast: function () {
+        return _.last(this.currentParagraph())
+    },
+    add: function () {
+        for (var i = 0; i < arguments.length; i++) {
+            let string = arguments[i]
+            if (string === '<' || string === '>') {
+                ko('cannot add < or > as it screws up html')
+            } else  {
+                this.currentParagraph().push(string)
+            }
+        }
+        return null
+    },
+    newParagraph: function () {
+        this.paragraphs.push([])
+        return null
+    },
+    render: function () {
+        let textParagraphs = _.map(this.paragraphs, (p) => { return p.join('') })
+        return _.map(textParagraphs, (text) => { return `<p>${text}</p>` }).join("\n")
+    }
 }
 
-log('loaded blockd.js');
+blockd.add('$', 'd', 'e', 'b', 'u', 'g', '$')
+blockd.newParagraph()
+blockd.transform( /Enter/, (str, code, app) => { app.newParagraph() } )
+blockd.transform( /Shift/, () => { } )
+blockd.transform( /\./, (str, code, app) => { 
+    app.mode.caps = true
+    return str 
+})
+blockd.transform( /Backspace/, (str, code, app) => { 
+    if (/[a-zA-Z\'\"]/.test(app.getLast())) { 
+        app.removeLast() 
+    } 
+})
+blockd.transform( 32, () => { return ' ' } )
+blockd.transform( 192, () => { return '"' } )
+blockd.transform( 222, () => { return "'" } )
+blockd.transform( /\w/, (str, code, app) => { 
+    if (app.mode.caps) { 
+        delete app.mode.caps
+        str = str.toUpperCase()
+    } 
+    return str 
+})
 
+window.asd = blockd
+
+$( document ).ready(() => {
+    log('document ready')
+    $( '#content' ).html( blockd.render() )
+    $( 'body' ).keydown((event) => {
+        var key = event.originalEvent.key
+        let code = event.keyCode
+        blockd.handle(key, code)
+        let renderedHtml = blockd.render()
+        $( '#content' ).html( renderedHtml )
+    })
+})
+
+/*
 $( document ).ready(() => {
   log('loaded jquery');
   ok("typeof content !== 'undefined'");
@@ -89,3 +210,5 @@ $( document ).ready(() => {
     _render();
   });
 });
+*/
+log('loaded blockd.js')
