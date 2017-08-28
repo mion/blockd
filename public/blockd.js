@@ -184,7 +184,7 @@ blockd.transform( /Escape/, (str, code, app) => {
     })
 })
 blockd.transform( /Enter/, (str, code, app) => { app.newParagraph() } )
-blockd.transform( /Tab|Alt|Shift|Meta/, () => { } )
+blockd.transform( /Shift|Tab|Alt|Meta/, () => { } )
 blockd.transform( /\./, (str, code, app) => { 
     app.mode.caps = true
     return str 
@@ -195,7 +195,15 @@ blockd.transform( /Backspace/, (str, code, app) => {
     } 
 })
 blockd.transform( 32, () => { return ' ' } )
-blockd.transform( 192, () => { return '"' } )
+blockd.transform( 192, (str, code, app) => { 
+    if (app.mode.quoting) {
+        delete app.mode.quoting;
+        return '”'
+    } else {
+        app.mode.quoting = true
+        return '“' 
+    }
+})
 blockd.transform( 222, () => { return "'" } )
 blockd.transform( /\>/, () => { return '→' }) // >
 blockd.transform( /\</, () => { return '←' }) // <
