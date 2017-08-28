@@ -12,6 +12,9 @@ log('loading blockd.js...')
 function ok(msg) { log(msg) }
 function ko(msg) { console.error(msg) }
 
+const chars = {
+    ERASE: '×',
+};
 
 let blockd = {
     paragraphs: [[]],
@@ -91,8 +94,10 @@ let blockd = {
     },
     render: function () {
         let textParagraphs = _.map(this.paragraphs, (p) => { return p.join('') })
-        // WIP this.countWords(textParagraphs)
-        let html = _.map(textParagraphs, (text) => { return `<p>${text}</p>` }).join("\n")
+        let htmlParagraphs = _.map(textParagraphs, (txt) => {
+            return _.map(txt.split('.'), (phrase) => { return (phrase.indexOf(chars.ERASE) === -1) ? `<span>${phrase}</span>` : `<span class="erased">${phrase}</span>` }).join('.').concat('_')
+        })
+        let html = _.map(htmlParagraphs, (htmlParag) => { return `<p>${htmlParag}</p>` }).join("\n")
         return html
     },
     /* WIP
@@ -206,7 +211,7 @@ blockd.transform( 192, (str, code, app) => {
 })
 blockd.transform( 222, () => { return "'" } )
 blockd.transform( /\>/, () => { return '→' }) // >
-blockd.transform( /\</, () => { return '←' }) // <
+blockd.transform( /\</, () => { return chars.ERASE }) // <
 blockd.transform( /\w/, (str, code, app) => { 
     if (app.mode.caps) { 
         delete app.mode.caps
@@ -215,6 +220,7 @@ blockd.transform( /\w/, (str, code, app) => {
     return str 
 })
 blockd.transform( /\=/, () => { return '—' })
+blockd.transform( /\_/, () => { return '—' })
 
 window.asd = blockd
 
