@@ -91,9 +91,28 @@ let blockd = {
     },
     render: function () {
         let textParagraphs = _.map(this.paragraphs, (p) => { return p.join('') })
+        // WIP this.countWords(textParagraphs)
         let html = _.map(textParagraphs, (text) => { return `<p>${text}</p>` }).join("\n")
         return html
     },
+    /* WIP
+    store: function (key, obj) {
+        localStorage.setItem(key, JSON.stringify({object: obj}))
+        return null
+    },
+    retrieve: function (key) {
+        let item = localStorage.getItem(key)
+        if (item !== null) { return JSON.parse(item).object }
+        else return null
+    },
+    countWords: function (textParagraphs) {
+        const STATS = "blockdStats"
+        var stats = this.retrieve(STATS)
+        if (stats === null) {
+            stats = {words: 0}
+        }
+    },
+    */
     backup: function () {
         let jsonString = JSON.stringify({paragraphs: this.paragraphs})
         try {
