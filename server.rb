@@ -1,6 +1,10 @@
 require 'sinatra'
 require 'pry'
 
+def timestamp
+    Time.now.to_s.split(' ').first
+end
+
 class FilenameSanitizer
   attr_reader :filename
 
@@ -25,7 +29,7 @@ end
 post '/blocks' do
   #binding.pry
   payload = JSON.parse(request.body.read)
-  filename = FilenameSanitizer.new(payload["filename"]).sanitize.concat("-#{Time.now.to_i}")
+  filename = FilenameSanitizer.new(payload["filename"]).sanitize.concat("-#{timestamp}")
   html = payload["html"]
   path = "/Users/gvieira/Documents/blockd"
   puts "[*] HTML: #{html}"
