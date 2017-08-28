@@ -197,8 +197,8 @@ blockd.transform( /Backspace/, (str, code, app) => {
 blockd.transform( 32, () => { return ' ' } )
 blockd.transform( 192, () => { return '"' } )
 blockd.transform( 222, () => { return "'" } )
-blockd.transform( 190, () => { return '→' }) // >
-blockd.transform( 188, () => { return '←' }) // <
+blockd.transform( /\>/, () => { return '→' }) // >
+blockd.transform( /\</, () => { return '←' }) // <
 blockd.transform( /\w/, (str, code, app) => { 
     if (app.mode.caps) { 
         delete app.mode.caps
