@@ -43,13 +43,13 @@ let blockd = {
         var transformationFunc = null
         for(var i = 0; i < this.codes.length; i++) {
             if (this.codes[i] === code) {
-                if (transformationFunc !== null) { ko('conflict'); break }
+                if (transformationFunc !== null) { ko('code conflict: ' + code); break }
                 transformationFunc = this.codeFuncs[i]
             }
         }
         for (var i = 0; i < this.regexps.length; i++) {
             if (this.regexps[i].test(string)) {
-                if (transformationFunc !== null) { ko('conflict'); break }
+                if (transformationFunc !== null) { ko('string conflict: ' + string); break }
                 transformationFunc = this.regexpFuncs[i]
             }
         }
@@ -91,14 +91,81 @@ let blockd = {
     },
     render: function () {
         let textParagraphs = _.map(this.paragraphs, (p) => { return p.join('') })
-        return _.map(textParagraphs, (text) => { return `<p>${text}</p>` }).join("\n")
+        let html = _.map(textParagraphs, (text) => { return `<p>${text}</p>` }).join("\n")
+        return html
+    },
+    backup: function () {
+        let jsonString = JSON.stringify({paragraphs: this.paragraphs})
+        try {
+            localStorage.setItem("blockdLastRenderedHTML", jsonString) // TODO: edge cases
+            return null
+        } catch (e) {
+            alert("Something went wrong while backing up the HTML. Be careful.")
+            ko(e)
+            return null
+        }
+    },
+    restoreBackup: function () {
+        try {
+            let backupJSON = JSON.parse(localStorage.getItem("blockdLastRenderedHTML"))
+            this.paragraphs = backupJSON.paragraphs
+            return null
+        } catch (e) {
+            ok("No backup available")
+            ok(e)
+            return null
+        }
+    },
+    eraseBackup: function () {
+        try {
+            localStorage.setItem("blockdLastRenderedHTML", "") // TODO: edge cases
+            return null
+        } catch (e) {
+            alert("Something went wrong while erasing the backed up HTML.")
+            ko(e)
+            return null
+        }
+    },
+    eraseCurrentContent: function () {
+        this.paragraphs = [[]]
+        return null
+    },
+    updateDisplay: function () {
+        $( '#content' ).html( this.render() )
+        return null
     }
 }
 
 blockd.add('$', 'd', 'e', 'b', 'u', 'g', '$')
 blockd.newParagraph()
+blockd.transform( /Escape/, (str, code, app) => {
+    let filename = prompt('Save to filename?')
+    if (filename === '' || _.isNull(filename)) {
+        return null
+    }
+    let payload = {
+        filename: filename,
+        html: app.render(),
+    }
+    $.ajax({
+        method: 'POST',
+        url: '/blocks',
+        data: JSON.stringify(payload),
+        success: () => { 
+            app.eraseBackup()
+            app.eraseCurrentContent() 
+            app.updateDisplay()
+        },
+        error: () => { 
+            if (confirm('Server failed to save. Force save as text?')) {
+                var blob = new Blob([payload.html], {type: "text/plain;charset=utf-8"});
+                let ret = saveAs(blob, filename+".txt");
+            }
+        }
+    })
+})
 blockd.transform( /Enter/, (str, code, app) => { app.newParagraph() } )
-blockd.transform( /Shift/, () => { } )
+blockd.transform( /Tab|Alt|Shift|Meta/, () => { } )
 blockd.transform( /\./, (str, code, app) => { 
     app.mode.caps = true
     return str 
@@ -118,18 +185,20 @@ blockd.transform( /\w/, (str, code, app) => {
     } 
     return str 
 })
+blockd.transform( /\=/, () => { return '—' })
 
 window.asd = blockd
 
+blockd.restoreBackup()
 $( document ).ready(() => {
     log('document ready')
-    $( '#content' ).html( blockd.render() )
+    blockd.updateDisplay()
     $( 'body' ).keydown((event) => {
+        blockd.backup()
         var key = event.originalEvent.key
         let code = event.keyCode
         blockd.handle(key, code)
-        let renderedHtml = blockd.render()
-        $( '#content' ).html( renderedHtml )
+        blockd.updateDisplay()
     })
 })
 

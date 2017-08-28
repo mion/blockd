@@ -23,14 +23,15 @@ get '/' do
 end
 
 post '/blocks' do
+  #binding.pry
   payload = JSON.parse(request.body.read)
-  puts "[*] Raw payload: #{payload}"
   filename = FilenameSanitizer.new(payload["filename"]).sanitize.concat("-#{Time.now.to_i}")
-  paragraphs = payload["paragraphs"].join("\n")
+  html = payload["html"]
   path = "/Users/gvieira/Documents/blockd"
+  puts "[*] HTML: #{html}"
   puts "[*] Path: #{path}"
-  puts "[*] Filename: #{filename}"
-  puts "[*] Paragraphs: #{paragraphs}"
-  File.open(path + "/" + filename + ".txt", "w+") { |f| f.puts(paragraphs) }
+  puts "[*] Original filename: #{payload['filename']}"
+  puts "[*] Saved as filename: #{filename}"
+  File.open(path + "/" + filename + ".html", "w+") { |f| f.puts(html) }
 end
 
